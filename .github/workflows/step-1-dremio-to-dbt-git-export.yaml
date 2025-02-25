@@ -1,0 +1,70 @@
+name: STEP 1 - Run Dremio dbt export to git
+
+on: workflow_dispatch
+  # schedule:
+  #   - cron: '* 2 * * *'
+
+env: # See README.md
+  DREMIO_SOURCE_ENV_URL: '${{ vars.DREMIO_SOURCE_ENV_URL }}' # incl. https:// and port
+  DREMIO_SOURCE_ENV_PAT: '${{ secrets.DREMIO_SOURCE_ENV_PAT }}'
+  DREMIO_FILTER_JSON: export_filter.json
+  DBT_OUTPUT_DIR: dbt_export_out
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  deploy:
+    name: Dremio CI/CD with dbt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout dremio-dbt-exporter Github repository
+        run: |
+          OPEN_PR_COUNT=$(gh pr list --state open --json number -q '. | length')
+          if [ $OPEN_PR_COUNT -gt 0 ]; then echo "::error::ERROR: There are $OPEN_PR_COUNT open pull requests. Please merge them before rerunning this pipeline." && exit 1; fi;
+          rm -rf $DBT_OUTPUT_DIR;
+          git clone https://github.com/dremio-professional-services/dremio-dbt-exporter;
+      - name: Set up git branch
+        run: |
+          git status
+          git log
+          TS=$(date +"%Y-%m-%d_%H-%M-%S")
+          git config --global user.email "dremio-dbt-exporter@noemail.com"
+          git config --global user.name "dremio-dbt-exporter"
+          git config --global --type bool push.autoSetupRemote true
+          git checkout -B $TS
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Install Python and dbt packages
+        run: |
+          if [ -f requirements.txt ]; then pip install -r requirements.txt --quiet; fi
+      - name: Run dbt exporter
+        run: |
+          python3 dremio-dbt-exporter/dbt_export.py --export-filter-json export_filter.json --dremio-endpoint $DREMIO_SOURCE_ENV_URL --dremio-pat $DREMIO_SOURCE_ENV_PAT --output-dir $DBT_OUTPUT_DIR
+      - name: Validate output
+        run: |
+          echo "Checking $DBT_OUTPUT_DIR/models"
+          ls -l $DBT_OUTPUT_DIR/models
+      - name: Commit changes and create PR
+        run: |
+          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD);
+          MAIN_BRANCH="main";
+          rm -R dremio-dbt-exporter
+          git add $DBT_OUTPUT_DIR/*;
+          if [[ $(git status --porcelain) ]]; then     # Check if there are any new files to commit & merge
+            git commit -am "dbt-exporter-auto-commit";
+            git push -u --all;
+            echo "Creating PR..."
+            BASE_MESSAGE="This PR was automatically created by GH Actions for human review"
+            DELETED_FILES=$(git diff --name-status "$MAIN_BRANCH".."$CURRENT_BRANCH" | awk '$1 == "D" { print $2 }');
+            NUM_DELETED_FILES=$(echo $(echo $DELETED_FILES | tr -d '[:space:]' | wc -l));
+            if [ "$NUM_DELETED_FILES" -gt 0 ]; then
+              echo "Deleted files:\n$DELETED_FILES"
+              echo -e "$BASE_MESSAGE\n\nIMPORTANT: The following deleted objects may need to be cleaned up manually from the target environment (https://docs.getdbt.com/faqs/Models/removing-deleted-models):\n\n$DELETED_FILES\n" | gh pr create --title "Automatic dbt exporter PR for branch $CURRENT_BRANCH (Manual deletion of objects required)" --base $MAIN_BRANCH --reviewer "mxmarg" --body-file -
+            else
+              echo -e "$BASE_MESSAGE" | gh pr create --title "Automatic dbt exporter PR for branch $CURRENT_BRANCH" --base $MAIN_BRANCH --reviewer "mxmarg" --body-file -
+            fi
+          else
+            echo "No changes to commit. Skipping PR creation."
+          fi

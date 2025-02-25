@@ -1,0 +1,39 @@
+name: STEP 2 - Run dbt to Dremio
+
+on: workflow_dispatch
+  # schedule:
+  #   - cron: '* 2 * * *'
+
+env: # See README.md and https://docs.dremio.com/current/sonar/client-applications/clients/dbt/#profile-for-dremio-software-with-authentication-through-a-personal-access-token
+  DREMIO_SPACE: _DUMMY
+  DREMIO_SPACE_FOLDER: no_schema
+  DREMIO_OBJECT_STORAGE_SOURCE: $scratch
+  DREMIO_OBJECT_STORAGE_PATH: no_schema
+  DREMIO_TARGET_ENV_HOST: '${{ vars.DREMIO_TARGET_ENV_HOST }}' # without https:// and port
+  DREMIO_PORT: 443
+  DREMIO_USER: '${{ vars.DREMIO_USER }}'
+  DREMIO_TARGET_ENV_PAT: '${{ secrets.DREMIO_TARGET_ENV_PAT }}'
+  DBT_MODEL_DIR: dbt_export_out/models # this dbt selector can also be specified to certain subfolders only (https://docs.getdbt.com/reference/node-selection/methods#path)
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  deploy:
+    name: Dremio CI/CD with dbt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for open PRs
+        run: |
+          OPEN_PR_COUNT=$(gh pr list --state open --json number -q '. | length')
+          if [ $OPEN_PR_COUNT -gt 0 ]; then echo "::error::ERROR: There are $OPEN_PR_COUNT open pull requests. Please merge them before rerunning this pipeline." && exit 1; fi;
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+      - name: Install Python and dbt packages
+        run: |
+          pip install dbt --quiet
+          if [ -f requirements.txt ]; then pip install -r requirements.txt --quiet; fi
+      - name: Run dbt
+        run: |
+          dbt --log-format-file json run --profiles-dir dbt_profile --select $DBT_MODEL_DIR --target prod
