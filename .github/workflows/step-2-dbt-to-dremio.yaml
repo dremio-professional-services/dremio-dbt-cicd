@@ -26,12 +26,17 @@ jobs:
         run: |
           OPEN_PR_COUNT=$(gh pr list --state open --json number -q '. | length')
           if [ $OPEN_PR_COUNT -gt 0 ]; then echo "::error::ERROR: There are $OPEN_PR_COUNT open pull requests. Please merge them before rerunning this pipeline." && exit 1; fi;
-      - name: Check if latest commit was already run
+      - name: Check if latest tag was already run
         run: |
           git fetch --prune --unshallow --tags   # Make sure the that tags are being fetched
-          LATEST_TAG=$(git describe --tags --exact-match)
-          if git describe --tags --exact-match > /dev/null 2>&1; then
-            echo "::error::WARNING: Latest commit was already run (Tag: $LATEST_TAG). No new changes to deploy." && exit 1
+          if git tag -l | grep -q .; then
+            LATEST_TAG=$(git describe --tags --exact-match)
+            if git describe --tags --exact-match > /dev/null 2>&1; then
+              echo "::error::WARNING: Latest commit was already run (Tag: $LATEST_TAG). No new changes to deploy." && exit 1
+            fi
+          else
+            echo "::info::No previous run tags found in the repository."
+            exit 0
           fi
       - name: Set up Python
         uses: actions/setup-python@v3
