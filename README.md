@@ -14,7 +14,7 @@
 - "Read and write permissions" and "Allow GitHub Actions to create and approve pull requests" for [GitHub Actions Workflow](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#enabling-workflows-for-private-repository-forks) (-> Settings -> General -> Workflow permissions)
 
 ## Github Actions Variables and Secrets
-- `GITHUB_PR_REVIEWER` (Variable)        -> see: `-r, --reviewer <handle>` [GH CLI Docs](https://cli.github.com/manual/gh_pr_create)
+- `GH_PR_REVIEWER` (Variable)        -> see: `-r, --reviewer <handle>` [GH CLI Docs](https://cli.github.com/manual/gh_pr_create)
 - `DREMIO_SOURCE_ENV_URL` (Variable)     -> incl. `https://` and port number
 - `DREMIO_TARGET_ENV_HOST` (Variable)    -> excl. `https://` and port number
 - `DREMIO_USER` (Variable)
