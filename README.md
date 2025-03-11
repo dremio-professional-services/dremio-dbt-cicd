@@ -21,6 +21,26 @@
 - `DREMIO_SOURCE_ENV_PAT` (Secret)       -> [Dremio Docs](https://docs.dremio.com/current/security/authentication/personal-access-tokens/#enabling-the-use-of-pats)
 - `DREMIO_TARGET_ENV_PAT` (Secret)
 
+## How to fork this repository into a private repo
+```
+export GH_USER=<USERNAME>
+# First, create a PRIVATE repo under https://github.com/$GH_USER/dremio-dbt-cicd-fork
+git clone --bare git@github.com:dremio-professional-services/dremio-dbt-cicd.git
+cd dremio-dbt-cicd.git
+git push --mirror git@github.com:$GH_USER/dremio-dbt-cicd-fork.git
+cd ..
+rm -rf dremio-dbt-cicd.git 
+
+git clone git@github.com:$GH_USER/dremio-dbt-cicd-fork.git
+cd dremio-dbt-cicd-fork
+git remote set-url --push upstream DISABLE
+git remote -v # Check if the remote was set correctly
+
+# Pull and merge changes from the upstream repo
+git fetch upstream
+git rebase upstream/main
+```
+
 ## How to run
 1. Specify the Dremio Space (and Source) to be exported as a dbt model via the `export_filter.json` file
 2. In GitHub, under "Actions", select the workflow "STEP 1 - Run Dremio dbt export to git" and click "Run workflow"
