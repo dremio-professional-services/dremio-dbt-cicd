@@ -11,7 +11,7 @@
 ## Requirements
 - See: [dremio-dbt-exporter Requirements for SOURCE environment](https://github.com/dremio-professional-services/dremio-dbt-exporter?tab=readme-ov-file#requirements)
 - In addition to the SOURCE environment privileges, sufficient `ALTER` and `SELECT` privileges on the relevant scopes in the TARGET environment are required
-- "Read and write permissions" and "Allow GitHub Actions to create and approve pull requests" for [GitHub Actions Workflow](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#enabling-workflows-for-private-repository-forks) (-> Settings -> General -> Workflow permissions)
+- "Read and write permissions" and "Allow GitHub Actions to create and approve pull requests" for [GitHub Actions Workflow](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository#enabling-workflows-for-private-repository-forks) (-> Settings -> Actions -> General -> Workflow permissions)
 
 ## Github Actions Variables and Secrets
 - `GH_PR_REVIEWER` (Variable)        -> see: `-r, --reviewer <handle>` [GH CLI Docs](https://cli.github.com/manual/gh_pr_create)
