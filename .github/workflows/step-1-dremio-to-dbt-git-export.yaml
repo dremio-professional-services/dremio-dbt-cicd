@@ -59,7 +59,7 @@ jobs:
             echo "Creating PR..."
             BASE_MESSAGE="This PR was automatically created by GH Actions for human review"
             DELETED_FILES=$(git diff --name-status "$MAIN_BRANCH".."$CURRENT_BRANCH" | awk '$1 == "D" { print $2 }');
-            NUM_DELETED_FILES=$(echo $(echo $DELETED_FILES | tr -d '[:space:]' | wc -l));
+            NUM_DELETED_FILES=$(echo $DELETED_FILES | tr -d '[:blank:]' | wc -l);
             if [ "$NUM_DELETED_FILES" -gt 0 ]; then
               echo "Deleted files:\n$DELETED_FILES"
               echo -e "$BASE_MESSAGE\n\nIMPORTANT: The following deleted objects may need to be cleaned up manually from the target environment (https://docs.getdbt.com/faqs/Models/removing-deleted-models):\n\n$DELETED_FILES\n" | gh pr create --title "Automatic dbt exporter PR for branch $CURRENT_BRANCH (Manual deletion of objects required)" --base $MAIN_BRANCH --reviewer $GH_PR_REVIEWER --body-file -
